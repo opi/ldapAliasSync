@@ -2,7 +2,9 @@ ldapAliasSync
 =============
 
 Roundcube Plugin for fetching Identities from LDAP Aliases at login
+
 Based on the 'Identiteam' Plugin (https://github.com/arodier/Roundcube-Plugins/tree/master/plugins/identiteam) by André Rodier <andre.rodier@gmail.com>.
+
 Copyright according to GNU GPL 3.0 (see COPYING).
 
 Bugs & Issues:
