@@ -9,22 +9,29 @@ class ldapAliasSync extends rcube_plugin
 {
     public $task = 'login';
 
+    // Internal variables
+    private $initialised;
     private $config;
     private $app;
+    private $conn;
 
     // mail parameters
     private $mail;
+    private $domain;
+    private $separator;
+    private $remove_domain;
 
     // LDAP parameters
     private $ldap;
     private $server;
+    private $bind_dn;
+    private $bind_pw;
+    private $base_dn;
     private $filter;
-    private $domain;
+    private $attr_mail;
+    private $attr_name;
+    private $attr_org;
     private $fields;
-    private $conn;
-
-    // Internal flags
-    private $initialised;
 
     function init()
     {
@@ -43,12 +50,22 @@ class ldapAliasSync extends rcube_plugin
             $this->ldap = $this->config['ldap'];
             $this->mail = $this->config['mail'];
 
-            $this->server = $this->ldap['server'];
-            $this->filter = $this->ldap['filter'];
-            $this->domain = $this->ldap['domain'];
-            $this->bind_dn = $this->ldap['bind_dn'];
-            $this->bind_pw = $this->ldap['bind_pw'];
-            $this->fields  = $this->ldap['fields'];
+            # Load LDAP configs
+            $this->server    = $this->ldap['server'];
+            $this->bind_dn   = $this->ldap['bind_dn'];
+            $this->bind_pw   = $this->ldap['bind_pw'];
+            $this->base_dn   = $this->ldap['base_dn'];
+            $this->filter    = $this->ldap['filter'];
+            $this->attr_mail = $this->ldap['attr_mail'];
+            $this->attr_name = $this->ldap['attr_name'];
+            $this->attr_org  = $this->ldap['attr_org'];
+            
+            $this->fields    = array($this->attr_mail, $this->attr_name, $this->attr_org);
+
+            # Load mail configs
+            $this->domain        = $this->mail['domain'];
+            $this->separator     = $this->mail['dovecot_impersonate_seperator'];
+            $this->remove_domain = $this->mail['remove_domain'];
 
             $this->conn = ldap_connect($this->server);
 
@@ -109,32 +126,23 @@ class ldapAliasSync extends rcube_plugin
 
         try
         {
-            # load ldap & mail confg
-            $ldap = $this->ldap;
-            $mail = $this->mail;
-
             # if set to true, the domain name is removed before the lookup 
-            $filter_remove_domain = $this->config['ldap']['filter_remove_domain'];
-
-            if ( $filter_remove_domain )
+            if ( $remove_domain )
             {            
                 $login = array_shift(explode('@', $login));
             }
             else
             {
                 # check if we need to add a domain if not specified in the login name
-                if ( !strstr($login, '@') && $mail['domain'] )
+                if ( !strstr($login, '@') && $domain )
                 {
-                    $domain = $mail['domain'];
                     $login = "$login@$domain" ;
                 }
             }
 
             # Check if dovecot master user is used. Use the same configuration name than
             # dovecot_impersonate plugin for roundcube
-            $separator = $this->config['mail']['dovecot_impersonate_seperator'];
-
-            if ( strpos($login,$separator) !== false )
+            if ( strpos($login, $separator) !== false )
             {   
                 $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $separator);
                 write_log('ldapAliasSync', $log);
@@ -142,8 +150,8 @@ class ldapAliasSync extends rcube_plugin
                 $login = array_shift(explode($separator, $login));
             }   
 
-            $filter = sprintf($ldap['filter'], $login);
-            $result = ldap_search($this->conn, $this->domain, $this->filter, $this->fields);
+            $ldap_filter = sprintf($this->filter, $login);
+            $result = ldap_search($this->conn, $this->domain, $ldap_filter, $this->fields);
 
             if ( $result )
             {
@@ -158,12 +166,13 @@ class ldapAliasSync extends rcube_plugin
 
                     foreach ( $result as $ldapID )
                     {
-                        $name = $ldapID['cn'];
-                        $email = $ldapID['uid'].'@'.$domain;
-                        $organisation = $ldapID['o'];
+                        $email = $ldapID[$attr_mail];
+                        $name = $ldapID[$attr_name];
+                        $organisation = $ldapID[$attr_org];
 
-                        if ( !$organisation ) $organisation = '';
+                        if ( !strstr($email, '@') && $domain ) $email = $email.'@'.$domain;
                         if ( !$name ) $name = '';
+                        if ( !$organisation ) $organisation = '';
 
                         $identity[] = array(
                             'email' => $email,
