@@ -12,17 +12,18 @@ $rcmail_config['ldapAliasSync'] = array(
 
     // LDAP parameters
     'ldap' => array(
-        'server'     => 'localhost',                      // Your LDAP server address
-        'bind_dn'    => 'cn=mail,dc=example,dc=com',      // The account to bind to the LDAP server
-        'bind_pw'    => 'secret',                         // Bind password
-        'base_dn'    => 'ou=accounts,dc=example,dc=com',  // LDAP search base
-        'filter'     => '(uid=%s)',                       // The LDAP filter to use
-        'attr_mail'  => 'uid',                            // LDAP email attribute
-        'attr_name'  => 'cn',                             // LDAP name attribute
-        'attr_org'   => 'o',                              // LDAP organization attribute
-        'attr_reply' => '',                               // LDAP reply-to attribute
-        'attr_bcc'   => '',                               // LDAP bcc attribute
-        'attr_sig'   => '',                               // LDAP signature attribute
+        'server'     => 'ldap://localhost',                                         // Your LDAP server address (required)
+        'bind_dn'    => 'cn=mail,dc=example,dc=com',                                // LDAP Bind DN (optional)
+        'bind_pw'    => 'secret',                                                   // Bind password (optional)
+        'base_dn'    => 'ou=aliases,dc=example,dc=com',                             // LDAP search base (required)
+        'filter'     => '(aliasedobjectname=uid=%s,ou=users,dc=example,dc=org)',    // The LDAP filter to use
+        'attr_mail'  => 'uid',                                                      // LDAP email attribute (required)
+                                                                                    //  --> can also be local part
+        'attr_name'  => 'cn',                                                       // LDAP name attribute (optional)
+        'attr_org'   => 'o',                                                        // LDAP organization attribute (optional)
+        'attr_reply' => '',                                                         // LDAP reply-to attribute (optional)
+        'attr_bcc'   => '',                                                         // LDAP bcc attribute (optional)
+        'attr_sig'   => '',                                                         // LDAP signature attribute (optional)
     ),
 );
 ?>
