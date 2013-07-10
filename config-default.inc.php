@@ -12,18 +12,17 @@ $rcmail_config['ldapAliasSync'] = array(
 
     // LDAP parameters
     'ldap' => array(
-        'server'       => 'localhost',                      // Your LDAP server address
-        'bind_dn'      => 'cn=mail,dc=example,dc=com',      // The account to bind to the LDAP server
-        'bind_pw'      => 'secret',                         // Bind password
-        'base_dn'      => 'ou=accounts,dc=example,dc=com',  // LDAP search base
-        'filter'       => '(uid=%s)',                       // The LDAP filter to use
-        'attr_mail'    => 'uid',                            // LDAP email attribute
-        'attr_name'    => 'cn',                             // LDAP name attribute
-        'attr_org'     => 'o',                              // LDAP organization attribute
-        'attr_reply'   => '',                               // LDAP reply-to attribute
-        'attr_bcc'     => '',                               // LDAP bcc attribute
-        'attr_sig'     => '',                               // LDAP signature attribute
-        'attr_sightml' => '',                               // LDAP HTML signature flag
+        'server'     => 'localhost',                      // Your LDAP server address
+        'bind_dn'    => 'cn=mail,dc=example,dc=com',      // The account to bind to the LDAP server
+        'bind_pw'    => 'secret',                         // Bind password
+        'base_dn'    => 'ou=accounts,dc=example,dc=com',  // LDAP search base
+        'filter'     => '(uid=%s)',                       // The LDAP filter to use
+        'attr_mail'  => 'uid',                            // LDAP email attribute
+        'attr_name'  => 'cn',                             // LDAP name attribute
+        'attr_org'   => 'o',                              // LDAP organization attribute
+        'attr_reply' => '',                               // LDAP reply-to attribute
+        'attr_bcc'   => '',                               // LDAP bcc attribute
+        'attr_sig'   => '',                               // LDAP signature attribute
     ),
 );
 ?>
