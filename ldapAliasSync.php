@@ -1,7 +1,9 @@
 <?php
 /*
- * LDAP Alias Sync: Syncronize users' identities (name, email, organization) by querying an LDAP server's aliasses.
- * Based on the 'Identiteam' Plugin by André Rodier <andre.rodier@gmail.com>
+ * LDAP Alias Sync: Syncronize users' identities (name, email, organization, reply-to, bcc, signature)
+ * by querying an LDAP server's aliasses.
+ *
+ * Based on the 'IdentiTeam' Plugin by André Rodier <andre.rodier@gmail.com>
  * Author: Lukas Mika <lukas.mika@web.de>
  * Licence: GPLv3. (See copying)
  */
@@ -31,6 +33,9 @@ class ldapAliasSync extends rcube_plugin
     private $attr_mail;
     private $attr_name;
     private $attr_org;
+    private $attr_reply;
+    private $attr_bcc;
+    private $attr_sig;
     private $fields;
 
     function init()
@@ -51,16 +56,20 @@ class ldapAliasSync extends rcube_plugin
             $this->mail = $this->config['mail'];
 
             # Load LDAP configs
-            $this->server    = $this->ldap['server'];
-            $this->bind_dn   = $this->ldap['bind_dn'];
-            $this->bind_pw   = $this->ldap['bind_pw'];
-            $this->base_dn   = $this->ldap['base_dn'];
-            $this->filter    = $this->ldap['filter'];
-            $this->attr_mail = $this->ldap['attr_mail'];
-            $this->attr_name = $this->ldap['attr_name'];
-            $this->attr_org  = $this->ldap['attr_org'];
+            $this->server       = $this->ldap['server'];
+            $this->bind_dn      = $this->ldap['bind_dn'];
+            $this->bind_pw      = $this->ldap['bind_pw'];
+            $this->base_dn      = $this->ldap['base_dn'];
+            $this->filter       = $this->ldap['filter'];
+            $this->attr_mail    = $this->ldap['attr_mail'];
+            $this->attr_name    = $this->ldap['attr_name'];
+            $this->attr_org     = $this->ldap['attr_org'];
+            $this->attr_reply   = $this->ldap['attr_reply'];
+            $this->attr_bcc     = $this->ldap['attr_bcc'];
+            $this->attr_sig     = $this->ldap['attr_sig'];
             
-            $this->fields    = array($this->attr_mail, $this->attr_name, $this->attr_org);
+            $this->fields = array($this->attr_mail, $this->attr_name, $this->attr_org, $this->attr_reply,
+                $this->attr_bcc, $this->attr_sig);
 
             # Load mail configs
             $this->domain        = $this->mail['domain'];
@@ -169,15 +178,35 @@ class ldapAliasSync extends rcube_plugin
                         $email = $ldapID[$attr_mail];
                         $name = $ldapID[$attr_name];
                         $organisation = $ldapID[$attr_org];
+                        $reply        = $ldapID[$attr_reply];
+                        $bcc          = $ldapID[$attr_bcc];
+                        $signature    = $ldapID[$attr_sig];
 
                         if ( !strstr($email, '@') && $domain ) $email = $email.'@'.$domain;
-                        if ( !$name ) $name = '';
+                        if ( !$name )         $name         = '';
                         if ( !$organisation ) $organisation = '';
+                        if ( !$reply )        $reply        = '';
+                        if ( !$bcc )          $bcc          = '';
+                        if ( !$signature )    $signature    = '';
+                        
+                        
+                        if ( preg_match('/^\s*<[a-zA-Z]+/', $signature) )
+                        {
+                            $isHtml = 1;
+                        }
+                        else
+                        {
+                            $isHtml = 0;
+                        }
 
                         $identity[] = array(
                             'email' => $email,
                             'name' => $name,
                             'organization' => $organisation,
+                            'reply-to' => $reply,
+                            'bcc' => $bcc,
+                            'signature' => $signature,
+                            'html_signature' = $isHtml,
                         );
                             
                         array_push($identities[], $identity);
