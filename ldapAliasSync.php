@@ -167,12 +167,13 @@ class ldapAliasSync extends rcube_plugin {
 
                     # Collect the identity information
                     foreach ( $result as $ldapID ) {
-                        $email        = $ldapID[$attr_mail];
-                        $name         = $ldapID[$attr_name];
-                        $organisation = $ldapID[$attr_org];
-                        $reply        = $ldapID[$attr_reply];
-                        $bcc          = $ldapID[$attr_bcc];
-                        $signature    = $ldapID[$attr_sig];
+                        $email = $ldapID[$attr_mail];
+                        
+                        if ( $attr_name )  $name         = $ldapID[$attr_name];
+                        if ( $attr_org )   $organisation = $ldapID[$attr_org];
+                        if ( $attr_reply ) $reply        = $ldapID[$attr_reply];
+                        if ( $attr_bcc )   $bcc          = $ldapID[$attr_bcc];
+                        if ( $attr_sig )   $signature    = $ldapID[$attr_sig];
 
                         # If we only found the local part and have a find domain, append it
                         if ( $email && !strstr($email, '@') && $find_domain ) $email = "$email@$find_domain";
@@ -193,13 +194,13 @@ class ldapAliasSync extends rcube_plugin {
                             }
     
                             $identity[] = array(
-                                'email' => $email,
-                                'name' => $name,
-                                'organization' => $organisation,
-                                'reply-to' => $reply,
-                                'bcc' => $bcc,
-                                'signature' => $signature,
-                                'html_signature' = $isHtml,
+                                'email'          => $email,
+                                'name'           => $name,
+                                'organization'   => $organisation,
+                                'reply-to'       => $reply,
+                                'bcc'            => $bcc,
+                                'signature'      => $signature,
+                                'html_signature' => $isHtml,
                             );
                                 
                             array_push($identities[], $identity);
