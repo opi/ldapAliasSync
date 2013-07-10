@@ -1,6 +1,6 @@
 <?php
 /*
- * LDAP Alias Sync: Syncronize users' identities (name, email, organization) by querying an LDAP server.
+ * LDAP Alias Sync: Syncronize users' identities (name, email, organization) by querying an LDAP server's aliasses.
  * Based on the 'Identiteam' Plugin by André Rodier <andre.rodier@gmail.com>
  * Author: Lukas Mika <lukas.mika@web.de>
  * Licence: GPLv3. (See copying)
