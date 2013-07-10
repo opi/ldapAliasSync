@@ -22,3 +22,4 @@ $rcmail_config['ldapAliasSync'] = array(
         'attr_org'  => 'o',                                 // LDAP organization attribute
     ),
 );
+?>
