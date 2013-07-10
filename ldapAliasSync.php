@@ -19,9 +19,10 @@ class ldapAliasSync extends rcube_plugin {
 
     // mail parameters
     private $mail;
-    private $domain;
-    private $separator;
     private $remove_domain;
+    private $search_domain;
+    private $find_domain;
+    private $separator;
 
     // LDAP parameters
     private $ldap;
@@ -70,9 +71,10 @@ class ldapAliasSync extends rcube_plugin {
                 $this->attr_bcc, $this->attr_sig);
 
             # Load mail configs
-            $this->domain        = $this->mail['domain'];
-            $this->separator     = $this->mail['dovecot_impersonate_seperator'];
             $this->remove_domain = $this->mail['remove_domain'];
+            $this->search_domain = $this->mail['search_domain'];
+            $this->find_domain   = $this->mail['find_domain'];
+            $this->separator     = $this->mail['dovecot_seperator'];
 
             # LDAP Connection
             $this->conn = ldap_connect($this->server);
@@ -134,8 +136,8 @@ class ldapAliasSync extends rcube_plugin {
                 $login = array_shift(explode('@', $login));
             } else {
                 # check if we need to add a domain if not specified in the login name
-                if ( !strstr($login, '@') && $domain ) {
-                    $login = "$login@$domain" ;
+                if ( !strstr($login, '@') && $search_domain ) {
+                    $login = "$login@$search_domain" ;
                 }
             }
 
@@ -172,31 +174,39 @@ class ldapAliasSync extends rcube_plugin {
                         $bcc          = $ldapID[$attr_bcc];
                         $signature    = $ldapID[$attr_sig];
 
-                        if ( !strstr($email, '@') && $domain ) $email = $email.'@'.$domain;
-                        if ( !$name )         $name         = '';
-                        if ( !$organisation ) $organisation = '';
-                        if ( !$reply )        $reply        = '';
-                        if ( !$bcc )          $bcc          = '';
-                        if ( !$signature )    $signature    = '';
-                        
-                        # If the signature starts with an HTML tag, we mark the signature as HTML
-                        if ( preg_match('/^\s*<[a-zA-Z]+/', $signature) ) {
-                            $isHtml = 1;
-                        } else {
-                            $isHtml = 0;
-                        }
+                        # If we only found the local part and have a find domain, append it
+                        if ( $email && !strstr($email, '@') && $find_domain ) $email = "$email@$find_domain";
 
-                        $identity[] = array(
-                            'email' => $email,
-                            'name' => $name,
-                            'organization' => $organisation,
-                            'reply-to' => $reply,
-                            'bcc' => $bcc,
-                            'signature' => $signature,
-                            'html_signature' = $isHtml,
-                        );
-                            
-                        array_push($identities[], $identity);
+                        # Only collect the identities with valid email addresses
+                        if ( strstr($email, '@')) {
+                            if ( !$name )         $name         = '';
+                            if ( !$organisation ) $organisation = '';
+                            if ( !$reply )        $reply        = '';
+                            if ( !$bcc )          $bcc          = '';
+                            if ( !$signature )    $signature    = '';
+
+                            # If the signature starts with an HTML tag, we mark the signature as HTML
+                            if ( preg_match('/^\s*<[a-zA-Z]+/', $signature) ) {
+                                $isHtml = 1;
+                            } else {
+                                $isHtml = 0;
+                            }
+    
+                            $identity[] = array(
+                                'email' => $email,
+                                'name' => $name,
+                                'organization' => $organisation,
+                                'reply-to' => $reply,
+                                'bcc' => $bcc,
+                                'signature' => $signature,
+                                'html_signature' = $isHtml,
+                            );
+                                
+                            array_push($identities[], $identity);
+                        } else {
+                            $log = sprintf("Domain missing in email address '%s'", $email);
+                            write_log('ldapAliasSync', $log);
+                        }
                     }
                     
                     # Return structure for our LDAP identities
