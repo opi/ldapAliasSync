@@ -80,8 +80,13 @@ class ldapAliasSync extends rcube_plugin {
             if ( is_resource($this->conn) ) {
                 ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3);
 
-                $bound = ldap_bind($this->conn, $this->bind_dn, $this->bind_pw);
-
+                # Bind to LDAP (with account or anonymously)
+                if ( $this->bind_dn ){
+                    $bound = ldap_bind($this->conn, $this->bind_dn, $this->bind_pw);
+                } else {
+                    $bound = ldap_bind($this->conn);
+                }
+                
                 if ( $bound ) {
                     # register hook
                     $this->add_hook('user2email', array($this, 'user2email'));
