@@ -131,30 +131,36 @@ class ldapAliasSync extends rcube_plugin {
         $args['abort']    = false;
 
         try {
-            # if set to true, the domain name is removed before the lookup 
-            if ( $remove_domain ) {
-                if ( strstr($login, '@') ) {
-                    $login = array_shift(explode('@', $login));
+            # Get the local part and the domain part of login
+            if ( strstr($login, '@') ) {
+                $login_parts = explode('@', $login);
+                $local_part = array_shift($login_parts);
+                $domain_part = array_shift($login_parts);
+            } else {
+                $local_part = $login;
+                if ( $search_domain ) {
+                    $domain_part = $search_domain;
                 }
             }
             
-            # check if we need to add a domain if not specified in the login name
-            if ( $search_domain ) {
-                if ( !strstr($login, '@') ) {
-                    $login = "$login@$search_domain" ;
-                }
-            }
-
             # Check if dovecot master user is used.
-            if ( strpos($login, $separator) != false ) {   
+            if ( strstr($login, $separator) ) {   
                 $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $separator);
                 write_log('ldapAliasSync', $log);
 
-                $login = array_shift(explode($separator, $login));
+                $local_part = array_shift(explode($separator, $local_part));
             }   
 
-            # Replace placeholder with login
-            $ldap_filter = sprintf($this->filter, $login);
+            # Set the search email address
+            if ( $domain_part ) {
+                $login_email = "$local_part@$domain_part";
+            } else {
+                $domain_part = '';
+                $login_email = '';
+            }
+
+            # Replace place holders in the LDAP filter with login data
+            $ldap_filter = sprintf($this->filter, $login, $local_part, $domain_part, $login_email);
             
             # Search for LDAP data
             $result = ldap_search($this->conn, $this->domain, $ldap_filter, $this->fields);
