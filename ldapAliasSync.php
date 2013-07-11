@@ -19,8 +19,8 @@ class ldapAliasSync extends rcube_plugin {
 
     // mail parameters
     private $mail;
-    private $remove_domain;
     private $search_domain;
+    private $replace_domain;
     private $find_domain;
     private $separator;
 
@@ -71,10 +71,10 @@ class ldapAliasSync extends rcube_plugin {
                 $this->attr_bcc, $this->attr_sig);
 
             # Load mail configs
-            $this->remove_domain = $this->mail['remove_domain'];
-            $this->search_domain = $this->mail['search_domain'];
-            $this->find_domain   = $this->mail['find_domain'];
-            $this->separator     = $this->mail['dovecot_seperator'];
+            $this->search_domain  = $this->mail['search_domain'];
+            $this->replace_domain = $this->mail['replace_domain'];
+            $this->find_domain    = $this->mail['find_domain'];
+            $this->separator      = $this->mail['dovecot_seperator'];
 
             # LDAP Connection
             $this->conn = ldap_connect($this->server);
@@ -134,21 +134,25 @@ class ldapAliasSync extends rcube_plugin {
             # Get the local part and the domain part of login
             if ( strstr($login, '@') ) {
                 $login_parts = explode('@', $login);
-                $local_part = array_shift($login_parts);
+                $local_part  = array_shift($login_parts);
                 $domain_part = array_shift($login_parts);
+
+                if ( $this->replace_domain && $this->search_domain ) {
+                    $domain_part = $this->search_domain;
+                }
             } else {
                 $local_part = $login;
-                if ( $search_domain ) {
-                    $domain_part = $search_domain;
+                if ( $this->search_domain ) {
+                    $domain_part = $this->search_domain;
                 }
             }
             
             # Check if dovecot master user is used.
-            if ( strstr($login, $separator) ) {   
-                $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $separator);
+            if ( strstr($login, $this->separator) ) {   
+                $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $this->separator);
                 write_log('ldapAliasSync', $log);
 
-                $local_part = array_shift(explode($separator, $local_part));
+                $local_part = array_shift(explode($this->separator, $local_part));
             }   
 
             # Set the search email address
