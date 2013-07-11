@@ -132,17 +132,20 @@ class ldapAliasSync extends rcube_plugin {
 
         try {
             # if set to true, the domain name is removed before the lookup 
-            if ( $remove_domain && strstr($email, '@') ) {            
-                $login = array_shift(explode('@', $login));
-            } else {
-                # check if we need to add a domain if not specified in the login name
-                if ( !strstr($login, '@') && $search_domain ) {
+            if ( $remove_domain ) {
+                if ( strstr($login, '@') ) {
+                    $login = array_shift(explode('@', $login));
+                }
+            }
+            
+            # check if we need to add a domain if not specified in the login name
+            if ( $search_domain ) {
+                if ( !strstr($login, '@') ) {
                     $login = "$login@$search_domain" ;
                 }
             }
 
-            # Check if dovecot master user is used. Use the same configuration name than
-            # dovecot_impersonate plugin for roundcube
+            # Check if dovecot master user is used.
             if ( strpos($login, $separator) != false ) {   
                 $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $separator);
                 write_log('ldapAliasSync', $log);
