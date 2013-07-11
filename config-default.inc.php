@@ -7,17 +7,15 @@
 $rcmail_config['ldapAliasSync'] = array(
     // Mail parameters
     'mail' => array(
-        # Remove domain part from login name (xyz@example.com --> xyz) if given
-        # Set to true, if you intend to only lookup the local part in LDAP
-        # or override the domain part with 'search_domain';
-        # set to false, if you intend to lookup the whole email address
-        'remove_domain'     => true,
-        
-        # Domain to add to login (xyz --> xyz@example.com) if none is given (optional)
-        # This parameter is needed, if users login with only their local parts (xyz)
-        # but you intend to query the LDAP for the whole email address,
-        # or if you intend to override the domain part in the login (see 'remove_domain')
+        # Domain to use for LDAP searches (optional)
+        # If no login name is given (or 'replace_domain' is true),
+        # the domain part for the LDAP filter is set to this value
         'search_domain'     => 'example.com',
+        
+        # Replace domain part for LDAP searches
+        # This parameter can be used in order to override the login domain part with
+        # the value maintained in 'search_domain'
+        'replace_domain'    => false,
         
         # Domain to add to found local parts (asdf --> asdf@example.com) (optional)
         # If the returned value ('mail_attr') does only contain the local part of an email address,
@@ -53,7 +51,7 @@ $rcmail_config['ldapAliasSync'] = array(
         # This open filter possibility is the heart of the LDAP search.
         # - Use '%1$s' as a place holder for the login name
         # - Use '%2$s' as a place holder for the login name local part
-        # - Use '%3$s' as a place holder for the login name domain part (/search domain, if not given)
+        # - Use '%3$s' as a place holder for the login name domain part (/'search_domain', if not given or replaced)
         # - Use '%4$s' as a place holder for the email address ('%2$s'@'%3$s')
         # However, remember to search for the original entry, too (e.g. 'uid=%1$s'), as this is an identity as well!
         'filter'     => '(|(uid=%1$s)(aliasedobjectname=uid=%1$s,ou=users,dc=example,dc=org)',
