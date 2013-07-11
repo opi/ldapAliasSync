@@ -8,19 +8,21 @@ $rcmail_config['ldapAliasSync'] = array(
     // Mail parameters
     'mail' => array(
         # Remove domain part from login name (xyz@example.com --> xyz) if given
-        # Set to true, if you intend to only lookup the local part in LDAP;
-        # set to false, if you intend to lookup the whole email address.
+        # Set to true, if you intend to only lookup the local part in LDAP
+        # or override the domain part with 'search_domain';
+        # set to false, if you intend to lookup the whole email address
         'remove_domain'     => true,
         
         # Domain to add to login (xyz --> xyz@example.com) if none is given (optional)
-        # This parameter is needed, if users login with only their local parts (xyz),
-        # but you intend to query the LDAP for the whole email address
+        # This parameter is needed, if users login with only their local parts (xyz)
+        # but you intend to query the LDAP for the whole email address,
+        # or if you intend to override the domain part in the login (see 'remove_domain')
         'search_domain'     => 'example.com',
         
         # Domain to add to found local parts (asdf --> asdf@example.com) (optional)
-        # If the returned value does only contain the local part of an email address,
+        # If the returned value ('mail_attr') does only contain the local part of an email address,
         # this domain will be used as the domain part.
-        # This may only be empty, if all identities to be found contain a domain part
+        # This may only be empty, if all identities to be found contain domain parts
         # in their email addresses as all identities without a domain part in the email
         # address will not be returned!
         'find_domain'       => 'example.com',
@@ -38,10 +40,10 @@ $rcmail_config['ldapAliasSync'] = array(
         # LDAP server address (required)
         'server'     => 'ldap://localhost',
         
-        # LDAP Bind DN (optional)
+        # LDAP Bind DN (requried, if no anonymous read rights are set for the accounts)
         'bind_dn'    => 'cn=mail,dc=example,dc=com',
         
-        # Bind password (optional)
+        # Bind password (required, if the bind DN needs to authenticate)
         'bind_pw'    => 'secret',
         
         # LDAP search base (required)
@@ -49,7 +51,10 @@ $rcmail_config['ldapAliasSync'] = array(
         
         # LDAP search filter (required)
         # This open filter possibility is the heart of the LDAP search.
-        # Use '%1$s' as a place holder for the login name (domain part depending on the configuration above)
+        # - Use '%1$s' as a place holder for the login name
+        # - Use '%2$s' as a place holder for the login name local part
+        # - Use '%3$s' as a place holder for the login name domain part (/search domain, if not given)
+        # - Use '%4$s' as a place holder for the email address ('%2$s'@'%3$s')
         # However, remember to search for the original entry, too (e.g. 'uid=%1$s'), as this is an identity as well!
         'filter'     => '(|(uid=%1$s)(aliasedobjectname=uid=%1$s,ou=users,dc=example,dc=org)',
         
