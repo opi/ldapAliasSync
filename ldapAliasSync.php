@@ -132,7 +132,7 @@ class ldapAliasSync extends rcube_plugin {
 
         try {
             # if set to true, the domain name is removed before the lookup 
-            if ( $remove_domain ) {            
+            if ( $remove_domain && strstr($email, '@') ) {            
                 $login = array_shift(explode('@', $login));
             } else {
                 # check if we need to add a domain if not specified in the login name
@@ -179,7 +179,7 @@ class ldapAliasSync extends rcube_plugin {
                         if ( $email && !strstr($email, '@') && $find_domain ) $email = "$email@$find_domain";
 
                         # Only collect the identities with valid email addresses
-                        if ( strstr($email, '@')) {
+                        if ( strstr($email, '@') ) {
                             if ( !$name )         $name         = '';
                             if ( !$organisation ) $organisation = '';
                             if ( !$reply )        $reply        = '';
@@ -214,19 +214,19 @@ class ldapAliasSync extends rcube_plugin {
                     $args['email'] = $identities;
                     
                     # Check which identities are available in database but nut in LDAP and delete those
-                    if (count($identities[]) > 0 && $db_identities[] = $this->app->user->list_identities()) {
-                        foreach ($db_identities as $db_identity) {
+                    if ( count($identities[]) > 0 && $db_identities[] = $this->app->user->list_identities() ) {
+                        foreach ( $db_identities as $db_identity ) {
                             $in_ldap = null;
                             
-                            foreach ($identities as $identity) {
+                            foreach ( $identities as $identity ) {
                                 # email is our only comparison parameter
-                                if($db_identity['email'] == $identity['email'] && !$in_ldap) {
+                                if( $db_identity['email'] == $identity['email'] && !$in_ldap ) {
                                     $in_ldap = $db_identity['identity_id'];
                                 }
                             }
                             
                             # If this identity does not exist in LDAP, delete it from database
-                            if (!$in_ldap) {
+                            if ( !$in_ldap ) {
                                 $db_user->delete_identity($in_ldap);
                             }
                         }
