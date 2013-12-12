@@ -227,7 +227,7 @@ class ldapAliasSync extends rcube_plugin {
                     $args['email'] = $identities;
                     
                     # Check which identities are available in database but nut in LDAP and delete those
-                    if ( count($identities[]) > 0 && $db_identities[] = $this->app->user->list_identities() ) {
+                    if ( count($identities) > 0 && $db_identities[] = $this->app->user->list_identities() ) {
                         foreach ( $db_identities as $db_identity ) {
                             $in_ldap = null;
                             
