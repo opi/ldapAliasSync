@@ -256,7 +256,9 @@ class ldapAliasSync extends rcube_plugin {
             }
 
             ldap_close($this->conn);
-        }
+        } catch(Exception $e) {
+            echo 'Caught exception: ',  $e->getMessage(), "\n";
+	}
         return $args;
     }
 }
