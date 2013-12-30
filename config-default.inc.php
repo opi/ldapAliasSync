@@ -39,22 +39,22 @@ $rcmail_config['ldapAliasSync'] = array(
         'server'     => 'ldap://localhost',
         
         # LDAP Bind DN (requried, if no anonymous read rights are set for the accounts)
-        'bind_dn'    => 'cn=mail,dc=example,dc=com',
+        'bind_dn'    => 'cn=mail,ou=services,dc=example,dc=com',
         
         # Bind password (required, if the bind DN needs to authenticate)
         'bind_pw'    => 'secret',
         
         # LDAP search base (required)
-        'base_dn'    => 'ou=aliases,dc=example,dc=com',
+        'base_dn'    => 'ou=users,dc=example,dc=com',
         
         # LDAP search filter (required)
         # This open filter possibility is the heart of the LDAP search.
-        # - Use '%1$s' as a place holder for the login name
-        # - Use '%2$s' as a place holder for the login name local part
-        # - Use '%3$s' as a place holder for the login name domain part (/'search_domain', if not given or replaced)
-        # - Use '%4$s' as a place holder for the email address ('%2$s'@'%3$s')
+        # - Use '%login' as a place holder for the login name
+        # - Use '%local' as a place holder for the login name local part
+        # - Use '%domain' as a place holder for the login name domain part (/'search_domain', if not given or replaced)
+        # - Use '%email' as a place holder for the email address ('%local'@'%domain')
         # However, remember to search for the original entry, too (e.g. 'uid=%1$s'), as this is an identity as well!
-        'filter'     => '(|(uid=%1$s)(aliasedobjectname=uid=%1$s,ou=users,dc=example,dc=org)',
+        'filter'     => '(|(uid=%local)(aliasedObjectName=uid=%local,ou=users,dc=example,dc=com))',
         
         # LDAP email attribute (required)
         # If only the local part is returned, the 'find_domain' is appended (e.g. uid=asdf --> asdf@example.com).
