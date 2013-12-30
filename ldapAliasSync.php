@@ -74,14 +74,10 @@ class ldapAliasSync extends rcube_plugin {
             $this->find_domain    = $this->mail['find_domain'];
             $this->separator      = $this->mail['dovecot_seperator'];
 
-            $log = sprintf("Config geladen");
-	    write_log('ldapAliasSync', $log);
             # LDAP Connection
             $this->conn = ldap_connect($this->server);
 
             if ( is_resource($this->conn) ) {
-		$log = sprintf("LDAP-Verbindung steht");
-		write_log('ldapAliasSync', $log);
                 ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3);
 
                 # Bind to LDAP (with account or anonymously)
@@ -92,12 +88,8 @@ class ldapAliasSync extends rcube_plugin {
                 }
 
                 if ( $bound ) {
-		    $log = sprintf("Mail-User ist angemendet");
-		    write_log('ldapAliasSync', $log);
                     # register hook
                     $this->add_hook('login_after', array($this, 'login_after'));
-		    $log = sprintf("Hook gesetzt");
-                    write_log('ldapAliasSync', $log);
                     $this->initialised = true;
                 } else {
                     $log = sprintf("Bind to server '%s' failed. Con: (%s), Error: (%s)",
@@ -131,13 +123,8 @@ class ldapAliasSync extends rcube_plugin {
      * - more URL parameters
      */
     function login_after($args) {
-	$log = sprintf("Funktion login_after");
-	write_log('ldapAliasSync', $log);
-
         $this->rc_user = rcmail::get_instance()->user;
         $login = $this->rc_user->get_username('mail');
-        $log = sprintf("User-ID: $login");
-        write_log('ldapAliasSync', $log);
 
         try {
             # Get the local part and the domain part of login
@@ -193,7 +180,6 @@ class ldapAliasSync extends rcube_plugin {
                     $identities = array();
 
                     # Collect the identity information
-                    write_log('ldapAliasSync', $info['count']);
                     for($i=0; $i<$info['count']; $i++) {
                         write_log('ldapAliasSync', $i);
                         $email = null;
@@ -204,10 +190,8 @@ class ldapAliasSync extends rcube_plugin {
                         $signature = null;
 
                         $ldapID = $info["$i"];
-                        write_log('ldapAliasSync', $ldapID);
                         $ldap_temp = $ldapID[$this->attr_mail];
                         $email = $ldap_temp[0];
-                        write_log('ldapAliasSync', $email);
                         if ( $this->attr_name ) {
                             $ldap_temp = $ldapID[$this->attr_name];
                             $name = $ldap_temp[0];
@@ -264,8 +248,6 @@ class ldapAliasSync extends rcube_plugin {
                         }
                     }
 
-                    write_log('ldapAliasSync', $identities);
-
                     if ( count($identities) > 0 && $db_identities = $this->rc_user->list_identities() ) {
                         # Check which identities not yet contained in the database
                         foreach ( $identities as $identity ) {
@@ -304,8 +286,6 @@ class ldapAliasSync extends rcube_plugin {
                                 write_log('ldapAliasSync', $log);
                             }
                         }
-                        $log = sprintf("Identities synced for %s", $login);
-                        write_log('ldapAliasSync', $log);
                     }
                 } else {
                     $log = sprintf("User '%s' not found (pass 2). Filter: %s", $login, $ldap_filter);
