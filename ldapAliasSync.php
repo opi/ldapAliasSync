@@ -8,17 +8,16 @@
  * Licence: GPLv3. (See copying)
  */
 class ldapAliasSync extends rcube_plugin {
-    
     public $task = 'login';
 
     // Internal variables
     private $initialised;
-    private $config;
     private $app;
-    private $conn;
+    private $config;
+    private $rc_user;
 
     // mail parameters
-    private $mail;
+    private $mail = array();
     private $search_domain;
     private $replace_domain;
     private $find_domain;
@@ -44,7 +43,6 @@ class ldapAliasSync extends rcube_plugin {
             write_log('ldapAliasSync', 'Initialising');
             
             # Load default config, and merge with users' settings
-            $this->load_config('config-default.inc.php');
             $this->load_config('config.inc.php');
 
             $this->app = rcmail::get_instance();
@@ -66,7 +64,7 @@ class ldapAliasSync extends rcube_plugin {
             $this->attr_reply   = $this->ldap['attr_reply'];
             $this->attr_bcc     = $this->ldap['attr_bcc'];
             $this->attr_sig     = $this->ldap['attr_sig'];
-            
+
             $this->fields = array($this->attr_mail, $this->attr_name, $this->attr_org, $this->attr_reply,
                 $this->attr_bcc, $this->attr_sig);
 
@@ -76,10 +74,14 @@ class ldapAliasSync extends rcube_plugin {
             $this->find_domain    = $this->mail['find_domain'];
             $this->separator      = $this->mail['dovecot_seperator'];
 
+            $log = sprintf("Config geladen");
+	    write_log('ldapAliasSync', $log);
             # LDAP Connection
             $this->conn = ldap_connect($this->server);
 
             if ( is_resource($this->conn) ) {
+		$log = sprintf("LDAP-Verbindung steht");
+		write_log('ldapAliasSync', $log);
                 ldap_set_option($this->conn, LDAP_OPT_PROTOCOL_VERSION, 3);
 
                 # Bind to LDAP (with account or anonymously)
@@ -88,10 +90,14 @@ class ldapAliasSync extends rcube_plugin {
                 } else {
                     $bound = ldap_bind($this->conn);
                 }
-                
+
                 if ( $bound ) {
+		    $log = sprintf("Mail-User ist angemendet");
+		    write_log('ldapAliasSync', $log);
                     # register hook
-                    $this->add_hook('user2email', array($this, 'user2email'));
+                    $this->add_hook('login_after', array($this, 'login_after'));
+		    $log = sprintf("Hook gesetzt");
+                    write_log('ldapAliasSync', $log);
                     $this->initialised = true;
                 } else {
                     $log = sprintf("Bind to server '%s' failed. Con: (%s), Error: (%s)",
@@ -110,25 +116,28 @@ class ldapAliasSync extends rcube_plugin {
 
         if ( $this->initialised )
             write_log('ldapAliasSync', 'Initialised');
+
     }
 
     /**
-     * user2email
+     * login_after
      * 
      * See http://trac.roundcube.net/wiki/Plugin_Hooks
+     * Arguments:
+     * - URL parameters (e.g. task, action, etc.)
      * Return values:
-     * email: E-mail address (or array of arrays with keys: email, name, organization, reply-to, bcc, signature, html_signature) 
+     * - task
+     * - action 
+     * - more URL parameters
      */
-    function user2email($args) {
-        $login    = $args['user'];      # User login
-        $first    = $args['first'];     # True if one entry is expected
-        $extended = $args['extended'];  # True if array result (email and identity data) is expected
-        $email    = $args['email'];
+    function login_after($args) {
+	$log = sprintf("Funktion login_after");
+	write_log('ldapAliasSync', $log);
 
-        # ensure we return valid information
-        $args['extended'] = true;
-        $args['first']    = false;
-        $args['abort']    = false;
+        $this->rc_user = rcmail::get_instance()->user;
+        $login = $this->rc_user->get_username('mail');
+        $log = sprintf("User-ID: $login");
+        write_log('ldapAliasSync', $log);
 
         try {
             # Get the local part and the domain part of login
@@ -146,14 +155,14 @@ class ldapAliasSync extends rcube_plugin {
                     $domain_part = $this->search_domain;
                 }
             }
-            
+
             # Check if dovecot master user is used.
-            if ( strstr($login, $this->separator) ) {   
+            if ( strstr($login, $this->separator) ) {
                 $log = sprintf("Removed dovecot impersonate separator (%s) in the login name", $this->separator);
                 write_log('ldapAliasSync', $log);
 
                 $local_part = array_shift(explode($this->separator, $local_part));
-            }   
+            }
 
             # Set the search email address
             if ( $domain_part ) {
@@ -163,11 +172,16 @@ class ldapAliasSync extends rcube_plugin {
                 $login_email = '';
             }
 
+            $filter = $this->filter;
+
             # Replace place holders in the LDAP filter with login data
-            $ldap_filter = sprintf($this->filter, $login, $local_part, $domain_part, $login_email);
-            
+            $ldap_filter = str_replace('%login', $login, $filter);
+            $ldap_filter = str_replace('%local', $local_part, $ldap_filter);
+            $ldap_filter = str_replace('%domain', $domain_part, $ldap_filter);
+            $ldap_filter = str_replace('%email', $login_email, $ldap_filter);
+
             # Search for LDAP data
-            $result = ldap_search($this->conn, $this->domain, $ldap_filter, $this->fields);
+            $result = ldap_search($this->conn, $this->base_dn, $ldap_filter, $this->fields);
 
             if ( $result ) {
                 $info = ldap_get_entries($this->conn, $result);
@@ -179,17 +193,44 @@ class ldapAliasSync extends rcube_plugin {
                     $identities = array();
 
                     # Collect the identity information
-                    foreach ( $result as $ldapID ) {
-                        $email = $ldapID[$attr_mail];
-                        
-                        if ( $attr_name )  $name         = $ldapID[$attr_name];
-                        if ( $attr_org )   $organisation = $ldapID[$attr_org];
-                        if ( $attr_reply ) $reply        = $ldapID[$attr_reply];
-                        if ( $attr_bcc )   $bcc          = $ldapID[$attr_bcc];
-                        if ( $attr_sig )   $signature    = $ldapID[$attr_sig];
+                    write_log('ldapAliasSync', $info['count']);
+                    for($i=0; $i<$info['count']; $i++) {
+                        write_log('ldapAliasSync', $i);
+                        $email = null;
+                        $name = null;
+                        $organization = null;
+                        $reply = null;
+                        $bcc = null;
+                        $signature = null;
+
+                        $ldapID = $info["$i"];
+                        write_log('ldapAliasSync', $ldapID);
+                        $ldap_temp = $ldapID[$this->attr_mail];
+                        $email = $ldap_temp[0];
+                        write_log('ldapAliasSync', $email);
+                        if ( $this->attr_name ) {
+                            $ldap_temp = $ldapID[$this->attr_name];
+                            $name = $ldap_temp[0];
+                        }
+                        if ( $this->attr_org ) {
+                            $ldap_temp = $ldapID[$attr_org];
+                            $organisation = $ldap_temp[0];
+                        }
+                        if ( $this->attr_reply ) {
+                            $ldap_temp = $ldapID[$attr_reply];
+                            $reply = $ldap_temp[0];
+                        }
+                        if ( $this->attr_bcc ) {
+                            $ldap_temp = $ldapID[$attr_bcc];
+                            $bcc = $ldap_temp[0];
+                        }
+                        if ( $this->attr_sig ) {
+                            $ldap_temp = $ldapID[$attr_sig];
+                            $signature = $ldap_temp[0];
+                        }
 
                         # If we only found the local part and have a find domain, append it
-                        if ( $email && !strstr($email, '@') && $find_domain ) $email = "$email@$find_domain";
+                        if ( $email && !strstr($email, '@') && $this->find_domain ) $email = "$email@$this->find_domain";
 
                         # Only collect the identities with valid email addresses
                         if ( strstr($email, '@') ) {
@@ -206,7 +247,7 @@ class ldapAliasSync extends rcube_plugin {
                                 $isHtml = 0;
                             }
     
-                            $identity[] = array(
+                            $identity = array(
                                 'email'          => $email,
                                 'name'           => $name,
                                 'organization'   => $organisation,
@@ -216,42 +257,62 @@ class ldapAliasSync extends rcube_plugin {
                                 'html_signature' => $isHtml,
                             );
                                 
-                            array_push($identities[], $identity);
+                            array_push($identities, $identity);
                         } else {
                             $log = sprintf("Domain missing in email address '%s'", $email);
                             write_log('ldapAliasSync', $log);
                         }
                     }
-                    
-                    # Return structure for our LDAP identities
-                    $args['email'] = $identities;
-                    
-                    # Check which identities are available in database but nut in LDAP and delete those
-                    if ( count($identities) > 0 && $db_identities[] = $this->app->user->list_identities() ) {
+
+                    write_log('ldapAliasSync', $identities);
+
+                    if ( count($identities) > 0 && $db_identities = $this->rc_user->list_identities() ) {
+                        # Check which identities not yet contained in the database
+                        foreach ( $identities as $identity ) {
+                            $in_db = false;
+
+                            foreach ( $db_identities as $db_identity ) {
+                                # email is our only comparison parameter
+                                if( $db_identity['email'] == $identity['email'] ) {
+                                    $in_db = true;
+                                    break;
+                                }
+                            }
+                            if( !$in_db ) {
+                                $this->rc_user->insert_identity( $identity );
+                                $log = "Added identity: ".$identity['email'];
+                                write_log('ldapAliasSync', $log);
+                            }
+                        }
+
+                        # Check which identities are available in database but nut in LDAP and delete those
                         foreach ( $db_identities as $db_identity ) {
-                            $in_ldap = null;
+                            $in_ldap = false;
                             
                             foreach ( $identities as $identity ) {
                                 # email is our only comparison parameter
-                                if( $db_identity['email'] == $identity['email'] && !$in_ldap ) {
-                                    $in_ldap = $db_identity['identity_id'];
+                                if( $db_identity['email'] == $identity['email'] ) {
+                                    $in_ldap = true;
+                                    break;
                                 }
                             }
                             
                             # If this identity does not exist in LDAP, delete it from database
-                            if ( !$in_ldap ) {
-                                $db_user->delete_identity($in_ldap);
+                            if( !$in_ldap ) {
+                                $this->rc_user->delete_identity($db_identity['identity_id']);
+                                $log = sprintf("Removed identity: ", $del_id);
+                                write_log('ldapAliasSync', $log);
                             }
                         }
                         $log = sprintf("Identities synced for %s", $login);
                         write_log('ldapAliasSync', $log);
                     }
                 } else {
-                    $log = sprintf("User '%s' not found (pass 2). Filter: %s", $login, $filter);
+                    $log = sprintf("User '%s' not found (pass 2). Filter: %s", $login, $ldap_filter);
                     write_log('ldapAliasSync', $log);
                 }
             } else {
-                $log = sprintf("User '%s' not found (pass 1). Filter: %s", $login, $filter);
+                $log = sprintf("User '%s' not found (pass 1). Filter: %s", $login, $ldap_filter);
                 write_log('ldapAliasSync', $log);
             }
 
