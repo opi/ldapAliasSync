@@ -197,19 +197,19 @@ class ldapAliasSync extends rcube_plugin {
                             $name = $ldap_temp[0];
                         }
                         if ( $this->attr_org ) {
-                            $ldap_temp = $ldapID[$attr_org];
+                            $ldap_temp = $ldapID[$this->attr_org];
                             $organisation = $ldap_temp[0];
                         }
                         if ( $this->attr_reply ) {
-                            $ldap_temp = $ldapID[$attr_reply];
+                            $ldap_temp = $ldapID[$this->attr_reply];
                             $reply = $ldap_temp[0];
                         }
                         if ( $this->attr_bcc ) {
-                            $ldap_temp = $ldapID[$attr_bcc];
+                            $ldap_temp = $ldapID[$this->attr_bcc];
                             $bcc = $ldap_temp[0];
                         }
                         if ( $this->attr_sig ) {
-                            $ldap_temp = $ldapID[$attr_sig];
+                            $ldap_temp = $ldapID[$this->attr_sig];
                             $signature = $ldap_temp[0];
                         }
 
