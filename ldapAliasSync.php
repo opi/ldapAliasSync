@@ -65,6 +65,14 @@ class ldapAliasSync extends rcube_plugin {
             $this->attr_bcc     = $this->ldap['attr_bcc'];
             $this->attr_sig     = $this->ldap['attr_sig'];
 
+            # Convert all attribute names to lower case
+            $this->attr_mail  = strtolower($this->attr_mail);
+            $this->attr_name  = strtolower($this->attr_name);
+            $this->attr_org   = strtolower($this->attr_org);
+            $this->attr_reply = strtolower($this->attr_reply)
+            $this->attr_bcc   = strtolower($this->attr_bcc);
+            $this->attr_sig   = strtolower($this->attr_sig);
+
             $this->fields = array($this->attr_mail, $this->attr_name, $this->attr_org, $this->attr_reply,
                 $this->attr_bcc, $this->attr_sig);
 
