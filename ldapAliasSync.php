@@ -65,6 +65,14 @@ class ldapAliasSync extends rcube_plugin {
             $this->attr_bcc     = $this->ldap['attr_bcc'];
             $this->attr_sig     = $this->ldap['attr_sig'];
 
+            # Convert all attribute names to lower case
+            $this->attr_mail  = strtolower($this->attr_mail);
+            $this->attr_name  = strtolower($this->attr_name);
+            $this->attr_org   = strtolower($this->attr_org);
+            $this->attr_reply = strtolower($this->attr_reply);
+            $this->attr_bcc   = strtolower($this->attr_bcc);
+            $this->attr_sig   = strtolower($this->attr_sig);
+
             $this->fields = array($this->attr_mail, $this->attr_name, $this->attr_org, $this->attr_reply,
                 $this->attr_bcc, $this->attr_sig);
 
@@ -213,38 +221,42 @@ class ldapAliasSync extends rcube_plugin {
                             $signature = $ldap_temp[0];
                         }
 
-                        # If we only found the local part and have a find domain, append it
-                        if ( $email && !strstr($email, '@') && $this->find_domain ) $email = "$email@$this->find_domain";
+                        $ldap_temp = $ldapID[$this->attr_mail];
+                        for($mi = 0; $mi < $ldap_temp['count']; $mi++) {
+                            $email = $ldap_temp[$mi];
+                            # If we only found the local part and have a find domain, append it
+                            if ( $email && !strstr($email, '@') && $this->find_domain ) $email = "$email@$this->find_domain";
 
-                        # Only collect the identities with valid email addresses
-                        if ( strstr($email, '@') ) {
-                            if ( !$name )         $name         = '';
-                            if ( !$organisation ) $organisation = '';
-                            if ( !$reply )        $reply        = '';
-                            if ( !$bcc )          $bcc          = '';
-                            if ( !$signature )    $signature    = '';
+                            # Only collect the identities with valid email addresses
+                            if ( strstr($email, '@') ) {
+                                if ( !$name )         $name         = '';
+                                if ( !$organisation ) $organisation = '';
+                                if ( !$reply )        $reply        = '';
+                                if ( !$bcc )          $bcc          = '';
+                                if ( !$signature )    $signature    = '';
 
-                            # If the signature starts with an HTML tag, we mark the signature as HTML
-                            if ( preg_match('/^\s*<[a-zA-Z]+/', $signature) ) {
-                                $isHtml = 1;
+                                # If the signature starts with an HTML tag, we mark the signature as HTML
+                                if ( preg_match('/^\s*<[a-zA-Z]+/', $signature) ) {
+                                    $isHtml = 1;
+                                } else {
+                                    $isHtml = 0;
+                                }
+
+                                $identity = array(
+                                    'email'          => $email,
+                                    'name'           => $name,
+                                    'organization'   => $organisation,
+                                    'reply-to'       => $reply,
+                                    'bcc'            => $bcc,
+                                    'signature'      => $signature,
+                                    'html_signature' => $isHtml,
+                                );
+
+                                array_push($identities, $identity);
                             } else {
-                                $isHtml = 0;
+                                $log = sprintf("Domain missing in email address '%s'", $email);
+                                write_log('ldapAliasSync', $log);
                             }
-    
-                            $identity = array(
-                                'email'          => $email,
-                                'name'           => $name,
-                                'organization'   => $organisation,
-                                'reply-to'       => $reply,
-                                'bcc'            => $bcc,
-                                'signature'      => $signature,
-                                'html_signature' => $isHtml,
-                            );
-                                
-                            array_push($identities, $identity);
-                        } else {
-                            $log = sprintf("Domain missing in email address '%s'", $email);
-                            write_log('ldapAliasSync', $log);
                         }
                     }
 
