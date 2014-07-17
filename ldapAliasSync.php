@@ -223,7 +223,7 @@ class ldapAliasSync extends rcube_plugin {
 
                         $ldap_temp = $ldapID[$this->attr_mail];
                         for($mi = 0; $mi < $ldap_temp['count']; $mi++) {
-                            $email = $ldap_temp[0];
+                            $email = $ldap_temp[$mi];
                             # If we only found the local part and have a find domain, append it
                             if ( $email && !strstr($email, '@') && $this->find_domain ) $email = "$email@$this->find_domain";
 
