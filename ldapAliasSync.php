@@ -65,6 +65,9 @@ class ldapAliasSync extends rcube_plugin {
             $this->attr_bcc     = $this->ldap['attr_bcc'];
             $this->attr_sig     = $this->ldap['attr_sig'];
 
+            # Special features for attrs set above
+            $this->attr_mail_ignore = $this->ldap['attr_mail_ignore'];
+
             # Convert all attribute names to lower case
             $this->attr_mail  = strtolower($this->attr_mail);
             $this->attr_name  = strtolower($this->attr_name);
@@ -229,6 +232,10 @@ class ldapAliasSync extends rcube_plugin {
 
                             # Only collect the identities with valid email addresses
                             if ( strstr($email, '@') ) {
+                                # Verify that domain part is not ignored
+                                $domain = explode('@', $email)[1];
+                                if ( in_array($domain, $this->attr_mail_ignore) ) continue;
+
                                 if ( !$name )         $name         = '';
                                 if ( !$organisation ) $organisation = '';
                                 if ( !$reply )        $reply        = '';
