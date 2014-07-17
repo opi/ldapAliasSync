@@ -69,7 +69,7 @@ class ldapAliasSync extends rcube_plugin {
             $this->attr_mail  = strtolower($this->attr_mail);
             $this->attr_name  = strtolower($this->attr_name);
             $this->attr_org   = strtolower($this->attr_org);
-            $this->attr_reply = strtolower($this->attr_reply)
+            $this->attr_reply = strtolower($this->attr_reply);
             $this->attr_bcc   = strtolower($this->attr_bcc);
             $this->attr_sig   = strtolower($this->attr_sig);
 
