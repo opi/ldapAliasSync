@@ -75,6 +75,9 @@ $rcmail_config['ldapAliasSync'] = array(
         
         # LDAP signature attribute (optional)
         'attr_sig'   => '',
+
+        # Domain parts to ignore in attr_mail (optional)
+        'attr_mail_ignore' => array(),
     ),
 );
 ?>
