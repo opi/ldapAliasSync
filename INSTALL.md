@@ -7,10 +7,6 @@
 ```
 cd /var/www/roundcube/plugins
 git clone https://github.com/opi/ldapAliasSync.git
-```
-
-change rights : 
-```
 chown -R www-data:www-data /var/www/roundcube/plugins/ldapAliasSync
 ```
 
